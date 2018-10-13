@@ -8,13 +8,13 @@ import (
 
 func main() {
 
-	// Report number of goroutines. Should be 1.
-	fmt.Printf("Number of goroutines: %d\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 
 	leak()
 
 	// Report new number of goroutines. Will be 2.
-	fmt.Printf("Number of goroutines: %d\n", runtime.NumGoroutine())
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 }
 
 // leak is a buggy function. It launches a goroutine that blocks reading from a
