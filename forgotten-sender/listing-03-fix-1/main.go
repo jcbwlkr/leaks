@@ -4,28 +4,23 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
 	"runtime"
 	"time"
 )
 
 func main() {
 
-	// Seed the random number generator so we get different results.
-	// The seed 42 always results in a timeout.
-	// The seed 99 always results in success.
-	// In production we may seed using the current time like
-	// rand.Seed(time.Now().UnixNano())
-	rand.Seed(42)
-
-	fmt.Printf("Number of goroutines: %d\n\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 
 	process()
 
-	// Sleep long enough to ensure the goroutine has finished.
-	time.Sleep(200 * time.Millisecond)
+	// Hold the program from terminating for 1 second to see if the goroutine
+	// created by process will terminate.
+	time.Sleep(time.Second)
 
-	fmt.Printf("\nNumber of goroutines: %d\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 }
 
 func process() {
@@ -37,6 +32,7 @@ func process() {
 	// Start a worker to do some work then send on the channel.
 	go func() {
 		ch <- doSomeWork()
+		fmt.Println("Worker terminated")
 	}()
 
 	// Create a timeout channel. In 100ms a value will be sent on this channel.
@@ -52,9 +48,9 @@ func process() {
 	}
 }
 
-// doSomeWork simulates a function that may take up to 200ms to do something.
+// doSomeWork simulates a function that takes up to 200ms to finish some work.
 func doSomeWork() string {
-	delay := time.Duration(rand.Intn(200)) * time.Millisecond
+	delay := time.Duration(200 * time.Millisecond)
 	time.Sleep(delay)
 	return "some value"
 }

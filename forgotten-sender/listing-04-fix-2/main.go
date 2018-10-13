@@ -5,28 +5,23 @@ package main
 import (
 	"context"
 	"fmt"
-	"math/rand"
 	"runtime"
 	"time"
 )
 
 func main() {
 
-	// Seed the random number generator so we get different results.
-	// The seed 42 always results in a timeout.
-	// The seed 99 always results in success.
-	// In production we may seed using the current time like
-	// rand.Seed(time.Now().UnixNano())
-	rand.Seed(42)
-
-	fmt.Printf("Number of goroutines: %d\n\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 
 	process(context.Background())
 
-	// Sleep long enough to ensure the goroutine has finished.
-	time.Sleep(200 * time.Millisecond)
+	// Hold the program from terminating for 1 second to see if the goroutine
+	// created by process will terminate.
+	time.Sleep(time.Second)
 
-	fmt.Printf("\nNumber of goroutines: %d\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 }
 
 func process(ctx context.Context) {
@@ -45,7 +40,9 @@ func process(ctx context.Context) {
 	go func() {
 		select {
 		case ch <- doSomeWork(ctx):
+			fmt.Println("Worker completed")
 		case <-ctx.Done():
+			fmt.Println("Worker canceled")
 		}
 	}()
 
@@ -54,14 +51,14 @@ func process(ctx context.Context) {
 	case result := <-ch:
 		fmt.Println("Received:", result)
 	case <-ctx.Done():
-		fmt.Println("Canceled")
+		fmt.Println("Receiver canceled")
 	}
 }
 
 // doSomeWork simulates a function that may take up to 200ms to perform some
 // processing but can be canceled early.
 func doSomeWork(ctx context.Context) string {
-	delay := time.Duration(rand.Intn(200)) * time.Millisecond
+	delay := time.Duration(200 * time.Millisecond)
 
 	select {
 	case <-time.After(delay):
