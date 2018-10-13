@@ -35,11 +35,18 @@ func process(ctx context.Context) {
 	// Make a channel for our goroutine to report its result.
 	ch := make(chan string)
 
-	// Start the worker. Block waiting to send on the channel or hear that the
-	// context is canceled.
+	// Start a worker to do some work then either send on the channel or abort if
+	// the context was canceled.
 	go func() {
+
+		// Get the result of the work. Ideally ctx could be passed down into
+		// doSomeWork which would know how to cancel early. Realistically, in many
+		// cases it is not cancellable and the worker must wait for it to finish.
+		result := doSomeWork()
+
+		// Send on the channel if possible or abort if the context is canceled.
 		select {
-		case ch <- doSomeWork(ctx):
+		case ch <- result:
 			fmt.Println("Worker completed")
 		case <-ctx.Done():
 			fmt.Println("Worker canceled")
@@ -55,15 +62,9 @@ func process(ctx context.Context) {
 	}
 }
 
-// doSomeWork simulates a function that may take up to 200ms to perform some
-// processing but can be canceled early.
-func doSomeWork(ctx context.Context) string {
+// doSomeWork simulates a function that takes up to 200ms to finish some work.
+func doSomeWork() string {
 	delay := time.Duration(200 * time.Millisecond)
-
-	select {
-	case <-time.After(delay):
-		return "some value"
-	case <-ctx.Done():
-		return ""
-	}
+	time.Sleep(delay)
+	return "some value"
 }
