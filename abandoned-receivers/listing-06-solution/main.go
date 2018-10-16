@@ -1,5 +1,6 @@
-// Example program to show a goroutine leak. We start goroutines that range
-// over a channel but nothing ever closes the channel.
+// Example program to show a goroutine leak. We start
+// goroutines that range over a channel, but nothing ever
+// closes that channel.
 package main
 
 import (
@@ -10,52 +11,60 @@ import (
 )
 
 func main() {
-	fmt.Printf("Number of goroutines: %d\n\n", runtime.NumGoroutine())
+
+	// Report number of goroutines. Will be 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 
 	names := []string{"Anna", "Jacob", "Kell", "Carter", "Rory"}
 	processRecords(names)
 
-	// Give goroutines a chance to return before reporting.
-	time.Sleep(100 * time.Millisecond)
+	// Hold the program from terminating for 1 second to see
+	// if any goroutines created by process will terminate.
+	time.Sleep(time.Second)
 
-	fmt.Printf("\nNumber of goroutines: %d\n", runtime.NumGoroutine())
+	// Report number of goroutines. Will be more than 1.
+	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
 }
 
-// processRecords is given a slice of values such as lines from a file. The
-// order of these values is not important so it can start multiple workers to
-// perform some processing on each record then feed the results back.
+// processRecords is given a slice of values such as lines
+// from a file. The order of these values is not important
+// so the function can start multiple workers to perform some
+// processing on each record then feed the results back.
 func processRecords(records []string) {
-	input := make(chan string)
+
+	input := make(chan string, len(records))
 	output := make(chan string)
 
-	// Start multiple workers to process input and send results to output.
-	const workers = 3
+	// Load all of the records into the input channel. It is
+	// buffered with just enough capacity to hold all of the
+	// records so it will not block. Close the channel so
+	// workers will stop ranging when it is drained.
+	for _, record := range records {
+		input <- record
+	}
+	close(input)
+
+	// Start a pool of workers to process input and send
+	// results to output. Base the size of the worker pool on
+	// the number of logical CPUs available.
+	var workers = runtime.NumCPU()
 	for i := 0; i < workers; i++ {
 		go worker(i, input, output)
 	}
 
-	// Start a goroutine to feed records to workers. Close the channel when all
-	// records are sent to signal to the workers that no more sends will happen.
-	go func() {
-		for _, record := range records {
-			input <- record
-		}
-		close(input)
-	}()
-
-	// Receive from output the expected number of times. If 10 records went in
-	// then 10 will come out.
+	// Receive from output the expected number of times. If 10
+	// records went in then 10 will come out.
 	for i := 0; i < len(records); i++ {
 		fmt.Printf("[main    ]: output %s\n", <-output)
 	}
 }
 
-// worker represents the work that I wish to do in parallel. This is a blog
-// post so all the workers do is capitalize a string but you can imagine they
-// are doing something more intensive.
+// worker is the work the program wants to do concurrently.
+// This is a blog post so all the workers do is capitalize a
+// string but imagine they are doing something important.
 //
-// I don't know how many records each individual goroutine will need to process
-// so they use the range keyword to receive in a loop.
+// Each goroutine can't know how many records it will get so
+// it needs use the range keyword to receive in a loop.
 func worker(id int, input <-chan string, output chan<- string) {
 	for v := range input {
 		fmt.Printf("[worker %d]: input %s\n", id, v)
