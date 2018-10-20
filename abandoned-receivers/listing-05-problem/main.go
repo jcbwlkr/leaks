@@ -12,18 +12,24 @@ import (
 
 func main() {
 
-	// Report number of goroutines. Will be 1.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Capture starting number of goroutines.
+	startingGs := runtime.NumGoroutine()
 
 	names := []string{"Anna", "Jacob", "Kell", "Carter", "Rory"}
 	processRecords(names)
 
 	// Hold the program from terminating for 1 second to see
-	// if any goroutines created by process will terminate.
+	// if any goroutines created by processRecords terminate.
 	time.Sleep(time.Second)
 
-	// Report number of goroutines. Will be more than 1.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Capture ending number of goroutines.
+	endingGs := runtime.NumGoroutine()
+
+	// Report the results.
+	fmt.Println("========================================")
+	fmt.Println("Number of goroutines before:", startingGs)
+	fmt.Println("Number of goroutines after :", endingGs)
+	fmt.Println("Number of goroutines leaked:", endingGs-startingGs)
 }
 
 // processRecords is given a slice of values such as lines
@@ -32,28 +38,33 @@ func main() {
 // processing on each record then feed the results back.
 func processRecords(records []string) {
 
-	input := make(chan string, len(records))
-	output := make(chan string)
-
 	// Load all of the records into the input channel. It is
 	// buffered with just enough capacity to hold all of the
 	// records so it will not block.
+
+	total := len(records)
+	input := make(chan string, total)
 	for _, record := range records {
 		input <- record
 	}
+	// close(input) // What if we forget to close this?
 
 	// Start a pool of workers to process input and send
 	// results to output. Base the size of the worker pool on
 	// the number of logical CPUs available.
-	var workers = runtime.NumCPU()
+
+	output := make(chan string)
+	workers := runtime.NumCPU()
 	for i := 0; i < workers; i++ {
 		go worker(i, input, output)
 	}
 
 	// Receive from output the expected number of times. If 10
 	// records went in then 10 will come out.
-	for i := 0; i < len(records); i++ {
-		fmt.Printf("[main    ]: output %s\n", <-output)
+
+	for i := 0; i < total; i++ {
+		result := <-output
+		fmt.Printf("[result  ]: output %s\n", result)
 	}
 }
 
@@ -68,4 +79,5 @@ func worker(id int, input <-chan string, output chan<- string) {
 		fmt.Printf("[worker %d]: input %s\n", id, v)
 		output <- strings.ToUpper(v)
 	}
+	fmt.Printf("[worker %d]: shutting down\n", id)
 }
