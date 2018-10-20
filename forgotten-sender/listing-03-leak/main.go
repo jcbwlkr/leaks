@@ -13,17 +13,23 @@ import (
 
 func main() {
 
-	// Report number of goroutines. Will be 1.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Capture starting number of goroutines.
+	startingGs := runtime.NumGoroutine()
 
 	process("gophers")
 
 	// Hold the program from terminating for 1 second to see
-	// if any goroutines created by process will terminate.
+	// if any goroutines created by process terminate.
 	time.Sleep(time.Second)
 
-	// Report number of goroutines. Will be 2.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Capture ending number of goroutines.
+	endingGs := runtime.NumGoroutine()
+
+	// Report the results.
+	fmt.Println("========================================")
+	fmt.Println("Number of goroutines before:", startingGs)
+	fmt.Println("Number of goroutines after :", endingGs)
+	fmt.Println("Number of goroutines leaked:", endingGs-startingGs)
 }
 
 // process is the work for the program. It finds a record
