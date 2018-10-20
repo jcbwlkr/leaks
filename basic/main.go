@@ -4,17 +4,28 @@ package main
 import (
 	"fmt"
 	"runtime"
+	"time"
 )
 
 func main() {
 
-	// Report number of goroutines. Will be 1.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Capture starting number of goroutines.
+	startingGs := runtime.NumGoroutine()
 
 	leak()
 
-	// Report new number of goroutines. Will be 2.
-	fmt.Println("Number of goroutines:", runtime.NumGoroutine())
+	// Hold the program from terminating for 1 second to see
+	// if any goroutines created by leak terminate.
+	time.Sleep(time.Second)
+
+	// Capture ending number of goroutines.
+	endingGs := runtime.NumGoroutine()
+
+	// Report the results.
+	fmt.Println("========================================")
+	fmt.Println("Number of goroutines before:", startingGs)
+	fmt.Println("Number of goroutines after :", endingGs)
+	fmt.Println("Number of goroutines leaked:", endingGs-startingGs)
 }
 
 // leak is a buggy function. It launches a goroutine that blocks reading from a
