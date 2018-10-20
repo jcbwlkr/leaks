@@ -62,7 +62,6 @@ func process(term string) {
 // search simulates a function that finds a document based
 // on a search term. It takes 200ms to perform this work.
 func search(term string) string {
-	delay := time.Duration(200 * time.Millisecond)
-	time.Sleep(delay)
+	time.Sleep(200 * time.Millisecond)
 	return "some value"
 }
