@@ -56,8 +56,7 @@ func process(term string) error {
 	// Launch a goroutine to find the record. Send the return
 	// value on the channel.
 	go func() {
-		record, err := search(term)
-		ch <- result{record: record, err: err}
+		ch <- search(term)
 	}()
 
 	// Block waiting to receive from the goroutine's channel
@@ -76,7 +75,10 @@ func process(term string) error {
 
 // search simulates a function that finds a record based
 // on a search term. It takes 200ms to perform this work.
-func search(term string) (string, error) {
+func search(term string) result {
 	time.Sleep(200 * time.Millisecond)
-	return "some value", nil
+	return result{
+		record: "some value",
+		err:    nil,
+	}
 }
